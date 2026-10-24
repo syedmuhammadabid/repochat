@@ -91,7 +91,7 @@ Gemini is the default provider:
 ```env
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your-key-from-aistudio.google.com/apikey
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 ```
 
 #### OpenRouter free-model configuration

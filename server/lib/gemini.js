@@ -1,6 +1,6 @@
 // Thin Gemini REST client: timeout, bounded retries with backoff, schema-constrained JSON output.
 import { fail } from './errors.js';
-const MODEL = process.env.GEMINI_MODEL || 'gemma-4-26b-a4b-it'; // confirm current name in AI Studio
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const SCHEMA = { type: 'OBJECT', properties: { answer: { type: 'STRING' }, citations: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['answer', 'citations'] };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -15,7 +15,16 @@ export async function ask(system, contents) {
     });
     if ((r.status === 429 || r.status === 503) && attempt < 2) { await sleep(1000 * 2 ** attempt); continue; }
     if (r.status === 429) throw fail(429, 'Gemini free-tier limit reached. Wait a moment and retry.');
-    if (!r.ok) throw fail(502, `Gemini error ${r.status}`);
+    if (!r.ok) {
+      let detail = '';
+      try {
+        const body = await r.json();
+        detail = body?.error?.message ? `: ${body.error.message}` : '';
+      } catch {
+        // Keep the status-based error when the upstream response is not JSON.
+      }
+      throw fail(502, `Gemini error ${r.status}${detail}`);
+    }
     try { return JSON.parse((await r.json()).candidates[0].content.parts[0].text); }
     catch { throw fail(502, 'Gemini returned an unreadable answer. Try again.'); }
   }
