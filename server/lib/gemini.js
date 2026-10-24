@@ -1,6 +1,6 @@
 // Thin Gemini REST client: timeout, bounded retries with backoff, schema-constrained JSON output.
 import { fail } from './errors.js';
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'; // confirm current name in AI Studio
+const MODEL = process.env.GEMINI_MODEL || 'gemma-4-26b-a4b-it'; // confirm current name in AI Studio
 const SCHEMA = { type: 'OBJECT', properties: { answer: { type: 'STRING' }, citations: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['answer', 'citations'] };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 

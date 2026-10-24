@@ -9,7 +9,9 @@ export default function Chat({ repo }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const end = useRef(null);
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [msgs, busy]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: 'end' });
+  }, [msgs, busy]);
 
   async function ask(question) {
     question = question.trim();
@@ -19,8 +21,11 @@ export default function Chat({ repo }) {
     try {
       const j = await post('/api/chat', { question, history, sections: repo.sections });
       setMsgs(m => [...m, { role: 'model', text: j.answer, citations: j.citations }]);
-    } catch (err) { setMsgs(m => [...m, { role: 'model', text: err.message }]); }
-    setBusy(false);
+    } catch (err) {
+      setMsgs(m => [...m, { role: 'model', text: err.message }]);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
