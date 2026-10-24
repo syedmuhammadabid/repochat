@@ -84,6 +84,29 @@ The available variables are:
 
 Never commit `server/.env` or expose provider keys in client-side code.
 
+#### Gemini configuration
+
+Gemini is the default provider:
+
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-key-from-aistudio.google.com/apikey
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+#### OpenRouter free-model configuration
+
+To use a free model through [OpenRouter](https://openrouter.ai/), set the provider to `openrouter` and add an OpenRouter API key:
+
+```env
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=your-openrouter-api-key
+OPENROUTER_MODEL=meta-llama/llama-3.3-8b-instruct:free
+OPENROUTER_SITE_URL=http://localhost:3001
+```
+
+`OPENROUTER_MODEL` is configurable, so you can select any compatible OpenRouter model, including other models marked with the `:free` suffix. OpenRouter free models may have availability and rate limits that vary by model.
+
 ### 4. Start the development servers
 
 Run these commands in separate terminals:
@@ -169,6 +192,8 @@ node --check server/routes/api.js
 node --check server/lib/docs.js
 node --check server/lib/errors.js
 node --check server/lib/gemini.js
+node --check server/lib/ai.js
+node --check server/lib/openrouter.js
 node --check server/lib/qa.js
 npm run build
 ```
