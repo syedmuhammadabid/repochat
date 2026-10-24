@@ -3,6 +3,10 @@ import { fail } from './errors.js';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const SCHEMA = { type: 'OBJECT', properties: { answer: { type: 'STRING' }, citations: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['answer', 'citations'] };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const retryAfterMs = response => {
+  const seconds = Number(response.headers.get('retry-after'));
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, 30000) : 1000;
+};
 
 export async function ask(system, contents) {
   if (!process.env.GEMINI_API_KEY) throw fail(500, 'Server is missing GEMINI_API_KEY.');
@@ -13,8 +17,8 @@ export async function ask(system, contents) {
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.2 } }),
       signal: AbortSignal.timeout(30000)
     });
-    if ((r.status === 429 || r.status === 503) && attempt < 2) { await sleep(1000 * 2 ** attempt); continue; }
-    if (r.status === 429) throw fail(429, 'Gemini free-tier limit reached. Wait a moment and retry.');
+    if (r.status === 429) throw fail(429, 'Gemini free-tier limit reached. Wait for the quota window to reset, then retry.');
+    if (r.status === 503 && attempt < 2) { await sleep(Math.min(retryAfterMs(r) * 2 ** attempt, 30000)); continue; }
     if (!r.ok) {
       let detail = '';
       try {

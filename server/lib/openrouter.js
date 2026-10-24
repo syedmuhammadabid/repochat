@@ -2,6 +2,10 @@ import { fail } from './errors.js';
 
 const MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-8b-instruct:free';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const retryAfterMs = response => {
+  const seconds = Number(response.headers.get('retry-after'));
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, 30000) : 1000;
+};
 
 function parseAnswer(content) {
   const text = Array.isArray(content) ? content.map(part => part.text || '').join('') : content;
@@ -38,11 +42,11 @@ export async function ask(system, contents) {
       signal: AbortSignal.timeout(30000)
     });
 
-    if ((response.status === 429 || response.status === 503) && attempt < 2) {
-      await sleep(1000 * 2 ** attempt);
+    if (response.status === 429) throw fail(429, 'OpenRouter free-tier limit reached. Wait for the quota window to reset, then retry.');
+    if (response.status === 503 && attempt < 2) {
+      await sleep(Math.min(retryAfterMs(response) * 2 ** attempt, 30000));
       continue;
     }
-    if (response.status === 429) throw fail(429, 'OpenRouter free-tier limit reached. Wait a moment and retry.');
     if (response.status === 401 || response.status === 403) throw fail(502, 'OpenRouter rejected the configured API key.');
     if (!response.ok) throw fail(502, `OpenRouter error ${response.status}`);
 

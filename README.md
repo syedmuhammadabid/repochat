@@ -12,6 +12,7 @@ Built with React, Node.js, Express, and configurable Gemini or OpenRouter models
 - Get citations that link directly to the source section on GitHub.
 - Verify citations in application code instead of trusting model output.
 - Show clear errors for invalid repositories, missing documentation, rate limits, and missing configuration.
+- Do not retry quota-exhausted requests; transient provider outages use bounded backoff.
 - Run locally or deploy as a single Node.js web service.
 
 ## Demo
@@ -106,6 +107,10 @@ OPENROUTER_SITE_URL=http://localhost:3001
 ```
 
 `OPENROUTER_MODEL` is configurable, so you can select any compatible OpenRouter model, including other models marked with the `:free` suffix. OpenRouter free models may have availability and rate limits that vary by model.
+
+### Rate-limit behavior
+
+Each chat question normally makes one provider request. If the model returns invalid citation IDs, RepoChat makes one verifier retry by design. Quota responses (`429`) are returned immediately instead of being retried, because retrying an exhausted quota only consumes more requests; temporary provider outages (`503`) are retried at most twice with bounded backoff. Large repositories also send more documentation tokens per question, so loading a smaller documentation-heavy repository or waiting for the provider quota window to reset may be necessary on free tiers.
 
 ### 4. Start the development servers
 
